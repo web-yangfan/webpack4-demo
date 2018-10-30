@@ -1,0 +1,11 @@
+html
+  head
+    title pug模板
+  body
+    div#wrapper koa2
+    h1 #{title}
+    h1= title
+  block js
+    script.
+      var G_USER = !{JSON.stringify(user)};
+    script(src="/static/index.js")

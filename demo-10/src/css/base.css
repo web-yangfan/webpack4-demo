@@ -1,0 +1,20 @@
+#app > div {
+    width: 200px;
+    height: 200px;
+}
+.item1 {
+    background: url('../assets/img/1.jpg') no-repeat;
+    background-size: cover;
+}
+.item2 {
+    background: url('../assets/img/2.jpg') no-repeat;
+}
+.item3 {
+    background: url('../assets/img/3.jpg') no-repeat;
+}
+.item4 {
+    background: url('../assets/img/4.jpg') no-repeat;
+}
+.item5 {
+    background: url('../assets/img/5.jpg') no-repeat;
+}
