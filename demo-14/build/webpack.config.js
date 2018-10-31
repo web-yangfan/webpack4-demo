@@ -3,6 +3,7 @@ const CleanWebpackPlugin = require('clean-webpack-plugin')
 const webpack = require('webpack');
 const path = require('path');
 
+
 module.exports = {
   // development production
   mode: 'development',
@@ -11,8 +12,8 @@ module.exports = {
   },
   output: {
     filename: '[name].bundle.js',
-    path: path.resolve(__dirname, 'dist'),
-    publicPath: '/'
+    path: path.resolve(__dirname, '../dist'),
+    publicPath: '/assets/'
   },
   // 开发模式
   // 编译后的代码映射回原始源代码
@@ -44,7 +45,7 @@ module.exports = {
   },
   plugins: [
     // 每次编译前清空删除dist目录
-    new CleanWebpackPlugin(['dist']),
+    new CleanWebpackPlugin(['dist'], {root: path.resolve(__dirname, '..')}),
     new HtmlWebpackPlugin({
       title: 'devServer'
     }),
@@ -52,8 +53,10 @@ module.exports = {
     new webpack.HotModuleReplacementPlugin()
   ],
   devServer: {
+    port: 8000,
     // 配置服务目录地址，
-     contentBase: './dist',
+    publicPath:"/",
+    contentBase: false,
      // 热更新
      hot: true
   },
