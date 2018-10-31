@@ -57,6 +57,29 @@ devServer: {
 └── webpack.config.js
 ```
 
+<br />
+
+## package.json
+``` 
+ "scripts": {
+    "build": "webpack --config webpack.config.js",
+    "watch": "webpack --watch",
+    "dev": "webpack-dev-server --open"
+  },
+  "devDependencies": {
+    "style-loader": "^0.23.1",
+    "css-loader": "^1.0.0",
+    "clean-webpack-plugin": "^0.1.19",
+    "html-webpack-plugin": "^3.2.0",
+    "webpack": "^4.20.2",
+    "webpack-cli": "^3.1.2",
+    "webpack-dev-server": "^3.1.9"
+  },
+```
+
+
+<br />
+
 ## webpack.config.js
 
 ```js
