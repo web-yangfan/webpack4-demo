@@ -1,33 +1,54 @@
 const path = require("path")
-const HTMLWebpackPlugin = require('html-webpack-plugin')
-const CleanWebpackPlugin = require('clean-webpack-plugin')
+const MiniCssExtractPlugin = require("mini-css-extract-plugin")
 
 module.exports = {
   mode: 'development',
   entry: {
-    pageA: "./src/pageA.js",
-    pageB: "./src/pageB.js"
+    index: "./src/index.js",
   },
   output: {
     path: path.resolve(__dirname, "dist"),
     filename: "[name].js",
-    chunkFilename: "[name].js"
+    publicPath: "./dist/"
+  },
+  module: {
+    rules: [
+      {
+        test: /\.scss$/,
+        use: [
+          MiniCssExtractPlugin.loader,
+          {
+            loader: 'css-loader',
+            options: {
+              // 开启 sourceMap
+              sourceMap: true
+            }
+          },
+          {
+            loader: 'postcss-loader',
+            options: {
+              ident: 'postcss',
+              plugins:() => [
+                require('autoprefixer')( {"browsers": ["> 1%", "last 2 versions", "not ie <= 8"]} )
+              ]
+            }
+          },
+          {
+            loader: 'sass-loader',
+            options: {
+              // 开启 sourceMap
+              sourceMap: true
+            }
+          }
+        ]
+      }
+    ]
   },
   plugins: [
-    // 编译前清空dist目录
-    new CleanWebpackPlugin(['dist']),
-    // 生成html
-    new HTMLWebpackPlugin({
-      filename: 'pageA.html',
-      title: 'pageA-懒加载',
-      inject: true,
-      excludeChunks: ['pageB']
-    }),
-    new HTMLWebpackPlugin({
-      filename: 'pageB.html',
-      title: 'pageB-懒加载',
-      inject: true,
-      excludeChunks: ['pageA']
+    // 单独打包css
+    new MiniCssExtractPlugin({
+      filename: "css/[name].css",
+      chunkFilename: "css/[id].css"
     })
   ]
 };

@@ -1,215 +1,178 @@
+处理图片、字体
+`注意:`当资源大于 `250k`，webpack会提示警告
 
-CSS 在 HTML 中的常用引入方法有 `<link>` 标签和 `<style>` 标签两种，所以这次就是结合webpack特点实现以下功能：
-
-- 将 css 通过 link 标签引入
-- 将 css 放在 style 标签里
-- 动态卸载和加载 css
-
-**下面是示例代码：**
+font下文件可以去 [Iconfont-阿里巴巴矢量图标库](http://www.iconfont.cn/) 找。
 
 <!-- more -->
 
-
-## 目录结构和代码
-
+**下面是示例代码：**
+## 文件结构
 ```
 ├── package.json
 ├── src
 │   ├── css
-│   │   ├── base.css
-│   │   └── common.css
-│   └── pageA.js
-├── pageA.html
+│   │   └── index.css
+│   ├── font
+│   │   ├── iconfont.css
+│   │   ├── iconfont.eot
+│   │   ├── iconfont.svg
+│   │   ├── iconfont.ttf
+│   │   └── iconfont.woff
+│   ├── img
+│   │   ├── 1.jpg
+│   │   ├── 2.jpg
+│   │   ├── 3.jpg
+│   │   ├── 4.jpg
+│   │   └── 5.jpg
+│   └── index.js
 └── webpack.config.js
 ```
 
-<br />
-
-
 ## package.json
-```js
- "scripts": {
+```
+  "scripts": {
     "build": "webpack --config webpack.config.js"
   },
-  "devDependencies": {
-    file-loader": "^2.0.0",
-    "css-loader": "^1.0.0",
+  "dependencies": {
+    "css-loader": "^1.0.1",
+    "file-loader": "^2.0.0",
+    "img-loader": "^3.0.1",
     "style-loader": "^0.23.1",
-    "webpack": "^4.22.0",
+    "url-loader": "^1.1.2",
+    "webpack": "^4.23.1",
     "webpack-cli": "^3.1.2"
-  }
+  },
 ```
-
 <br />
-
-
-## base.css
-
-```css
-html {
-    background: #999999;
-}
-
-```
-
-<br />
-
-
-## common.css
-
-```css
-h1 {
-    color: brown;
-}
-
-```
-
-<br />
-
 
 ## webpack.config.js
-
 ```js
 const path = require("path")
 
 module.exports = {
-  mode: 'development',
+  mode: 'production',
   entry: {
-    pageA: "./src/pageA.js",
+    index: "./src/index.js",
   },
   output: {
     path: path.resolve(__dirname, "dist"),
     filename: "[name].js",
     publicPath: "./dist/"
   },
+  performance: {
+    // 关闭资源超过 250kb警告
+    hints: false,
+  },
   module: {
     rules: [
       {
         test: /\.css$/,
-        use: [ 'style-loader', 'css-loader']
-      }
-    ]
-  }
-};
-```
-
-<br />
-
-
-## pageA.html
-
-```html
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <title>处理css</title>
-</head>
-<body>
-<script src="./dist/pageA.js"></script>
-</body>
-</html>
-
-```
-
-
-<br />
-
-
-## CSS通过<link>标签引入
-**通过file-loader，把上面style单独打包css文件，通过link引入**
-
-```js
- module: {
-    rules: [
-      {
-        test: /\.css$/,
         use: [
-          'style-loader/url',
-          'file-loader'
+          'style-loader',
+          'css-loader'
         ]
-      }
-    ]
-  }
-```
-
-<br />
-
-**在修改一下pageA.js**
-
-```js
-window.addEventListener("click", function() {
-  // 需要手动点击页面才会引入样式！！！
-  import("./css/base.css");
-});
-
-```
-
-<br />
-
-## CSS放在 `<style>`标签里
-**一般来说，css放在style标签里可以减少网络请求次数，提高响应时间。旧IE浏览器对style限制。下面代码把所有的style合并到一个style里**
-
-```js
-
-  module: {
-    rules: [
+      },
       {
-        test: /\.css$/,
+        test: /\.(png|jpg|jpeg|gif)/,
         use: [
           {
-            loader: "style-loader",
+            loader: 'url-loader',
             options: {
-              singleton: true // 处理为单个style标签
+              name: "[name]-[hash:5].min.[ext]",
+              // 设置小于10k转成base64
+              limit: 20000, // size <= 20KB
+              useRelativePath: true
             }
-          },
+          }
+        ]
+      },
+      {
+        test: /\.(eot|woff2?|ttf|svg)$/,
+        use: [
           {
-            loader: "css-loader",
+            loader: "url-loader",
             options: {
-              minimize: true // 压缩style中的代码
+              name: "[name]-[hash:5].min.[ext]",
+          
+              limit: 5000, // 字体文件小于等于5k生成base64，否则就打包文件
+              // publicPath: "fonts/",
+              outputPath: "assets/font/"
             }
           }
         ]
       }
     ]
   }
+};
+
+
 ```
-
-
 <br />
 
-## 动态卸载和加载CSS
-**修改代码实现每 0.5s 换一次背景颜色,修改webpack.config.js**
+## src/css/index.css
+```css
+@import "../font/iconfont.css";
 
-```js
-  module: {
-    rules: [
-      {
-        test: /\.css$/,
-        use: [
-          'style-loader/useable',
-          'css-loader'
-        ]
-      }
-    ]
-  }
+#app > div {
+  width: 200px;
+  height: 200px;
+  float: left;
+}
+
+.item1 {
+  background: url('../img/1.jpg') no-repeat;
+  background-size: cover;
+}
+.item2 {
+  background: url('../img/2.jpg') no-repeat;
+}
+.item3 {
+  background: url('../img/3.jpg') no-repeat;
+}
+.item4 {
+  background: url('../img/4.jpg') no-repeat;
+}
+.item5 {
+  background: url('../img/5.jpg') no-repeat;
+}
+
 ```
+<br />
 
-
-**修改pagaA.js**
-
+## src/index.js
 ```js
-import base from './css/base.css'
-let flag = false;
-setInterval(function() {
-  // unuse和use 是 cssObj上的方法
-  if (flag) {
-    base.unuse();
-  } else {
-    base.use();
-  }
-  flag = !flag;
-}, 500);
+import './css/index.css'
+```
+<br />
+
+## index.html
+```html
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>处理图片、字体</title>
+</head>
+<body>
+
+<ul>
+    <li class="icon iconfont icon-alibabaziti">阿里巴巴字体</li>
+    <li class="icon iconfont icon-zhiwuxianziti">智无线字体</li>
+    <li class="icon iconfont icon-wangxiaobaoziti">网销宝字体</li>
+    <li class="icon iconfont icon-tianmaozhitongcheziti">天猫直通车字体</li>
+</ul>
+
+<div id="app">
+    <div class="item1">1</div>
+    <div class="item2">2</div>
+    <div class="item3">3</div>
+    <div class="item4">4</div>
+    <div class="item5">5</div>
+</div>
+
+<script src="dist/index.js"></script>
+</body>
+</html>
 
 ```
 

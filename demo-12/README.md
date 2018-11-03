@@ -1,4 +1,6 @@
-在项目中全局使用第三方库， 比如npm安装jquery或者其他本地库，主要通过`webpack.ProvidePlugin`插件来配置，如果是库文件在本地的项目里则要配合`resolve.alias`来进行配置
+express+pug+webpack
+通过express做服务，pug做模板，结合webpack,具体配置请看下面的示例
+
 
 <!-- more -->
 
@@ -7,27 +9,36 @@
 ## 文件结构
 
 ```
-├── index.html
 ├── package.json
+├── server.js
 ├── src
+│   ├── basics.css
 │   ├── index.js
-│   └── lib
-│       └── utils.js
+│   ├── style.css
+│   └── views
+│       └── index.pug
 └── webpack.config.js
 ```
 
-<br />
-
 ## package.json
 
-```js
+```
+  "scripts": {
+    "build": "webpack --config webpack.config.js",
+    "dev": "node server.js"
+  },
   "devDependencies": {
-    "webpack": "^4.23.1",
-    "webpack-cli": "^3.1.2"
-  },
-  "dependencies": {
-    "jquery": "^3.3.1"
-  },
+    "clean-webpack-plugin": "^0.1.19",
+    "css-loader": "^1.0.0",
+    "express": "^4.16.4",
+    "pug": "^2.0.3",
+    "style-loader": "^0.23.1",
+    "webpack": "^4.21.0",
+    "webpack-cli": "^3.1.2",
+    "webpack-dev-middleware": "^3.4.0",
+    "webpack-dev-server": "^3.1.9",
+    "webpack-hot-middleware": "^2.24.3"
+  }
 ```
 
 <br />
@@ -35,30 +46,41 @@
 ## webpack.config.js
 
 ```js
-const path = require("path")
-const webpack = require("webpack")
+const path = require('path');
+const webpack = require('webpack')
+const CleanWebpackPlugin = require('clean-webpack-plugin');
 
 module.exports = {
+  // production  development
   mode: 'development',
   entry: {
-    index: "./src/index.js",
+    index: ['webpack-hot-middleware/client?reload=true', './src/index.js'],
   },
   output: {
-    path: path.resolve(__dirname, "dist"),
-    filename: "[name].js",
-    publicPath: './dist/'
+    filename: '[name].js',
+    path: path.resolve(__dirname, 'dist'),
+    publicPath: '/'
   },
-  resolve: {
-    alias: {
-      // 本地库需要配置路径和别名
-      _utils: path.resolve(__dirname, "src/lib/utils.js")
-    }
+  devtool: 'inline-source-map',
+  module: {
+    rules: [
+      {
+        rules: [
+          {
+            test: /\.css$/,
+            use: ['style-loader', 'css-loader']
+          }
+        ]
+      }
+    ]
   },
   plugins: [
-    new webpack.ProvidePlugin({
-       $: "jquery", // npm
-      _utils: "_utils" // 本地库
-    })
+    new CleanWebpackPlugin(['dist']),
+    new webpack.optimize.OccurrenceOrderPlugin(), // 排序输出
+    // 启用模块热替换(Enable Hot Module Replacement - HMR)
+    new webpack.HotModuleReplacementPlugin(),
+    // 跳过编译时出错的代码并记录，使编译后运行时的包不会发生错误
+    new webpack.NoEmitOnErrorsPlugin()
   ]
 };
 
@@ -66,58 +88,102 @@ module.exports = {
 
 <br />
 
-
-##### index.js
+## server.js
 
 ```js
-$('body').append('<button class="btn">点击我</button>')
-$('.btn').on('click', function() {
-  // 自定义库和jquery一样全局使用
-  _utils.log()
+const express = require('express')
+const webpack = require('webpack')
+const webpackDevMiddleware = require('webpack-dev-middleware')
+const config = require('./webpack.config.js')
+
+const app = express()
+
+// 获取webapck配置对象
+const compiler = webpack(config)
+
+
+app.set('view engine', 'pug') // 设置模板
+app.set('views', './src/views') // 设置模板位置
+
+app.use(webpackDevMiddleware(compiler, {
+  noInfo: true, // 向控制台显示任何内容
+  // 设置静态文件的路径，在pug模板引入js路径就是 /static/index.js
+  publicPath: '/static/'
+}))
+
+app.use(require("webpack-hot-middleware")(compiler))
+
+// 设置路由
+app.get('/', (req, res) => {
+  // 加载模板,并且往模板里传递参数 'user'、'message
+  res.render('index', { title: 'express传递参数 pug模板使用', user: 'js 调用 express传递的变量' } )
+})
+
+app.listen(3000, () => {
+  console.log('http://localhost:3000/')
 })
 
 ```
 
+
 <br />
 
-
-
-## utils.js
-
+## src/index.js
 ```js
-(function() {
-  
-  let utils = function() {}
-  utils.prototype.log =  function () {
-    alert('我是自定义库！')
-  }
-  
-  let initUtils = function() {
-    return new utils
-  }
-  
-  module.exports = initUtils()
-})()
+let wrapper = document.querySelector('#wrapper')
+
+let element = document.createElement('div')
+// G_USER 是express传递过来的参数
+element.innerHTML = G_USER
+element.classList.add('hello')
+
+wrapper.appendChild(element)
 
 ```
 
 <br />
 
-##### index.html
-
-```html
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <title>使用第三方库</title>
-</head>
-<body>
-    <script src="./dist/index.js"></script>
-</body>
-</html>
+## src/basics.css
+```css
+body {
+  background: beige;
+}
 
 ```
 
-    
- 执行webpack编译后，就可以发现 jquery 和 utils库可以全局使用
+<br />
+
+## src/style.css
+
+```css
+@import "basics.css";
+
+.hello {
+  color: red;
+  width: 400px;
+  height: 100px;
+  border: 1px solid red;
+}
+
+```
+
+<br />
+
+## src/views/index.pug
+```pug
+html
+  head
+    title pug模板
+  body
+    h1 express webpack-dev-middleware
+    div#wrapper
+    h1 #{title}
+    h1= title
+  block js
+    script.
+      var G_USER = !{JSON.stringify(user)};
+    script(src="/static/index.js")
+
+```
+
+

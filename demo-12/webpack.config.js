@@ -1,26 +1,37 @@
-const path = require("path")
-const webpack = require("webpack")
+const path = require('path');
+const webpack = require('webpack')
+const CleanWebpackPlugin = require('clean-webpack-plugin');
 
 module.exports = {
+  // production  development
   mode: 'development',
   entry: {
-    index: "./src/index.js",
+    index: ['webpack-hot-middleware/client?reload=true', './src/index.js'],
   },
   output: {
-    path: path.resolve(__dirname, "dist"),
-    filename: "[name].js",
-    publicPath: './dist/'
+    filename: '[name].js',
+    path: path.resolve(__dirname, 'dist'),
+    publicPath: '/'
   },
-  resolve: {
-    alias: {
-      // 本地库需要配置路径和别名
-      _utils: path.resolve(__dirname, "src/lib/utils.js")
-    }
+  devtool: 'inline-source-map',
+  module: {
+    rules: [
+      {
+        rules: [
+          {
+            test: /\.css$/,
+            use: ['style-loader', 'css-loader']
+          }
+        ]
+      }
+    ]
   },
   plugins: [
-    new webpack.ProvidePlugin({
-       $: "jquery", // npm
-      _utils: "_utils" // 本地库
-    })
+    new CleanWebpackPlugin(['dist']),
+    new webpack.optimize.OccurrenceOrderPlugin(), // 排序输出
+    // 启用模块热替换(Enable Hot Module Replacement - HMR)
+    new webpack.HotModuleReplacementPlugin(),
+    // 跳过编译时出错的代码并记录，使编译后运行时的包不会发生错误
+    new webpack.NoEmitOnErrorsPlugin()
   ]
 };

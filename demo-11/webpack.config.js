@@ -1,40 +1,38 @@
-const path = require("path")
+const path = require('path');
+const webpack = require('webpack')
 
 
 module.exports = {
+  // production  development
   mode: 'development',
   entry: {
-    index: "./src/index.js",
+    index: ['./src/index.js'],
   },
   output: {
-    path: path.resolve(__dirname, "dist"),
-    filename: "[name].js",
-    publicPath: './dist/'
+    filename: '[name].js',
+    path: path.resolve(__dirname, 'dist'),
+    publicPath: '/'
   },
-  module: {
-    rules: [
-      {
-        test: /\.css$/,
-        use: [
-          'style-loader',
-          'css-loader',
-        ]
-      },
-      {
-        test: /\.(eot|woff2?|ttf|svg)$/,
-        use: [
-          {
-            loader: "url-loader",
-            options: {
-              name: "[name]-[hash:5].min.[ext]",
-              
-              limit: 5000, // 字体文件小于等于5k生成base64，否则就打包文件
-              // publicPath: "fonts/",
-              outputPath: "assets/font/"
-            }
-          }
-        ]
+  devtool: 'inline-source-map',
+  devServer: {
+    // 配置服务目录地址，
+    contentBase: './',
+    // 热更新
+    hot: true,
+    port: 8000,
+    proxy: {
+      '/revision': {
+        target: 'https://www.ximalaya.com', // 代理地址
+        changeOrigin: true,
+        logLevel: 'debug'   // 控制台显示代理信息
       }
-    ]
-  }
+    }
+  },
+  plugins: [
+    // 使用热更新插件
+    new webpack.HotModuleReplacementPlugin(),
+    new webpack.ProvidePlugin({
+      $: 'jquery'
+    })
+  ]
 };

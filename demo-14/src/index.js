@@ -1,18 +1,28 @@
-import printMe from './printMe.js'
-import './style.css'
-function component() {
-	let element = document.createElement('div')
-	element.innerHTML = 'webpack devServer 服务，热更新'
-  element.classList.add('hello')
-  
-  var btn = document.createElement('button');
-  btn.innerHTML = 'Click me and check the console!'
-  btn.onclick = printMe
-  document.body.appendChild(element)
-  document.body.appendChild(btn)
+import { log, sex } from './libs/lib.js'
+
+let add = (a, b) => {
+    return a + b
 }
 
+add(10, 10)
 
-component()
+$('#app').html('<p>Eslint</p>')
+log()
+sex()
+
+// 屏蔽一样
+let test=()=>{console.log('正确的代码格式')} // eslint-disable-line
+
+/* eslint-disable */
+
+let test2=()=>{
+  console.log('区块屏蔽')
+}
+
+/* eslint-enable */
+
+
+
+
 
 

@@ -1,40 +1,24 @@
-const path = require("path")
+const path = require('path')
 
 module.exports = {
+  // development production
   mode: 'development',
   entry: {
-    pageA: "./src/pageA.js",
+    index: './src/index.js'
   },
   output: {
-    path: path.resolve(__dirname, "dist"),
-    filename: "[name].js",
-    publicPath: "./dist/"
+    filename: '[name].js',
+    path: path.resolve(__dirname, 'dist')
   },
   module: {
     rules: [
       {
-        test: /\.scss$/,
-        use: [
-          {
-            loader: 'style-loader',
-            options: {
-              sourceMap: true
-            }
-          },
-          {
-            loader: 'css-loader',
-            options: {
-              sourceMap: true
-            }
-          },
-          {
-            loader: 'sass-loader',
-            options: {
-              sourceMap: true
-            }
-          }
-        ]
+        test: /\.js$/,
+        exclude: /node_modules/,
+        use: {
+          loader: 'babel-loader'
+        }
       }
     ]
   }
-};
+}

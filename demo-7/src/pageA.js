@@ -1,1 +1,2 @@
-import './css/base.scss'
+import { a } from "./util";
+console.log(a());
