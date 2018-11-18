@@ -17,32 +17,13 @@ module.exports = {
   module: {
     rules: [
       {
-        test: /\.js$/,
-        include: [path.resolve(__dirname, 'src' )],
-        exclude: [path.resolve(__dirname, 'src/libs' )],
-        use: [
+        rules: [
           {
-            loader: 'eslint-loader',
-            options: {
-              formatter: require('eslint-friendly-formatter')
-            }
+            test: /\.css$/,
+            use: ['style-loader', 'css-loader']
           }
         ]
       }
     ]
-  },
-  devServer: {
-    // 配置服务目录地址，
-    contentBase: './',
-    // 热更新
-    hot: true,
-    overlay: true // 有错误，在浏览器上覆盖显示
-  },
-  plugins: [
-    // 使用热更新插件
-    new webpack.HotModuleReplacementPlugin(),
-    new webpack.ProvidePlugin({
-      $: 'jquery'
-    })
-  ]
+  }
 };

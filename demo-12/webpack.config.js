@@ -1,12 +1,12 @@
 const path = require('path');
 const webpack = require('webpack')
-const CleanWebpackPlugin = require('clean-webpack-plugin');
+
 
 module.exports = {
   // production  development
   mode: 'development',
   entry: {
-    index: ['webpack-hot-middleware/client?reload=true', './src/index.js'],
+    index: ['./src/index.js'],
   },
   output: {
     filename: '[name].js',
@@ -14,24 +14,22 @@ module.exports = {
     publicPath: '/'
   },
   devtool: 'inline-source-map',
-  module: {
-    rules: [
-      {
-        rules: [
-          {
-            test: /\.css$/,
-            use: ['style-loader', 'css-loader']
-          }
-        ]
+  devServer: {
+    // 配置服务目录地址，
+    contentBase: './',
+    // 热更新
+    hot: true,
+    port: 8000,
+    proxy: {
+      '/revision': {
+        target: 'https://www.ximalaya.com', // 代理地址
+        changeOrigin: true,
+        logLevel: 'debug'   // 控制台显示代理信息
       }
-    ]
+    }
   },
   plugins: [
-    new CleanWebpackPlugin(['dist']),
-    new webpack.optimize.OccurrenceOrderPlugin(), // 排序输出
-    // 启用模块热替换(Enable Hot Module Replacement - HMR)
-    new webpack.HotModuleReplacementPlugin(),
-    // 跳过编译时出错的代码并记录，使编译后运行时的包不会发生错误
-    new webpack.NoEmitOnErrorsPlugin()
+    // 使用热更新插件
+    new webpack.HotModuleReplacementPlugin()
   ]
 };

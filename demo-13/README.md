@@ -1,16 +1,14 @@
-koa2+pug+webpack
-通过koa2服务，pug模板，结合webpack,具体配置请看下面的示例
+express+pug+webpack
+通过express做服务，pug做模板，结合webpack,具体配置请看下面的示例
 
-`devMiddleware.js` 和 `hotMiddleware.js`写一个koa2中间件,
+
 <!-- more -->
 
 **下面是示例代码：**
 
 ## 文件结构
+
 ```
-├── middleware
-│   ├── devMiddleware.js
-│   └── hotMiddleware.js
 ├── package.json
 ├── server.js
 ├── src
@@ -20,89 +18,43 @@ koa2+pug+webpack
 │   └── views
 │       └── index.pug
 └── webpack.config.js
+```
+
+## package.json
 
 ```
-## package.json
-```
   "scripts": {
+    "build": "webpack --config webpack.config.js",
     "dev": "node server.js"
   },
-  "dependencies": {
-    "koa": "^2.0.0-alpha.8",
-    "koa-pug": "^3.0.0-2",
-    "koa-router": "^7.4.0",
-    "koa-static": "^5.0.0",
-    "koa-views": "^6.1.4"
-  },
   "devDependencies": {
-    "koa-webpack": "^5.1.0",
+    "clean-webpack-plugin": "^0.1.19",
+    "css-loader": "^1.0.0",
+    "express": "^4.16.4",
+    "pug": "^2.0.3",
+    "style-loader": "^0.23.1",
     "webpack": "^4.21.0",
     "webpack-cli": "^3.1.2",
     "webpack-dev-middleware": "^3.4.0",
+    "webpack-dev-server": "^3.1.9",
     "webpack-hot-middleware": "^2.24.3"
-  },
+  }
 ```
 
 <br />
-## middleware/devMiddleware.js
-```js
-const webpackDev  = require('webpack-dev-middleware')
 
-const devMiddleware = (compiler, opts) => {
-  const middleware = webpackDev(compiler, opts)
-  return async (ctx, next) => {
-    await middleware(ctx.req, {
-      end: (content) => {
-        ctx.body = content
-      },
-      setHeader: (name, value) => {
-        ctx.set(name, value)
-      }
-    }, next)
-  }
-}
-
-module.exports=devMiddleware;
-
-```
-<br />
-
-## middleware/hotMiddleware.js
-```js
-const webpackHot = require('webpack-hot-middleware')
-const PassThrough = require('stream').PassThrough;
-
-const hotMiddleware = (compiler, opts) => {
-  const middleware = webpackHot(compiler, opts);
-  return async (ctx, next) => {
-    let stream = new PassThrough()
-    ctx.body = stream
-    await middleware(ctx.req, {
-      write: stream.write.bind(stream),
-      writeHead: (status, headers) => {
-        ctx.status = status
-        ctx.set(headers)
-      }
-    }, next)
-  }
-  
-}
-
-
-module.exports = hotMiddleware;
-```
 ## webpack.config.js
 
 ```js
 const path = require('path');
 const webpack = require('webpack')
-
+const CleanWebpackPlugin = require('clean-webpack-plugin');
 
 module.exports = {
   // production  development
   mode: 'development',
   entry: {
-    index: ['./src/index.js'],
+    index: ['webpack-hot-middleware/client?reload=true', './src/index.js'],
   },
   output: {
     filename: '[name].js',
@@ -121,54 +73,51 @@ module.exports = {
         ]
       }
     ]
-  }
+  },
+  plugins: [
+    new CleanWebpackPlugin(['dist']),
+    new webpack.optimize.OccurrenceOrderPlugin(), // 排序输出
+    // 启用模块热替换(Enable Hot Module Replacement - HMR)
+    new webpack.HotModuleReplacementPlugin(),
+    // 跳过编译时出错的代码并记录，使编译后运行时的包不会发生错误
+    new webpack.NoEmitOnErrorsPlugin()
+  ]
 };
 
 ```
+
 <br />
 
 ## server.js
 
 ```js
-const Koa = require('koa')
-const router = require('koa-router')()
-const static = require('koa-static')
-const views = require('koa-views')
-const path = require('path')
-
+const express = require('express')
 const webpack = require('webpack')
-const koaWebpack = require('koa-webpack')
+const webpackDevMiddleware = require('webpack-dev-middleware')
 const config = require('./webpack.config.js')
+
+const app = express()
+
+// 获取webapck配置对象
 const compiler = webpack(config)
 
 
+app.set('view engine', 'pug') // 设置模板
+app.set('views', './src/views') // 设置模板位置
 
-const app = new Koa()
-// 加载模板引擎
-app.use(views(path.join(__dirname, './src/views'), {
-  extension: 'pug'
-}))
-
-const devMiddleware = {
-  noInfo: true, // 控制台显示任何信息
+app.use(webpackDevMiddleware(compiler, {
+  noInfo: true, // 向控制台显示任何内容
   // 设置静态文件的路径，在pug模板引入js路径就是 /static/index.js
   publicPath: '/static/'
-}
+}))
 
-router.get('/', async (ctx) => {
-  // ctx.body = "用户管理"
-  await ctx.render('index', {title: 'koa2传递参数 pug模板使用', user: 'js 调用 koa2传递的变量' } )
+app.use(require("webpack-hot-middleware")(compiler))
+
+// 设置路由
+app.get('/', (req, res) => {
+  // 加载模板,并且往模板里传递参数 'user'、'message
+  res.render('index', { title: 'express传递参数 pug模板使用', user: 'js 调用 express传递的变量' } )
 })
-
-/* 启动路由 */
-app.use(router.routes())
-app.use(router.allowedMethods())
-
-koaWebpack({ compiler,  devMiddleware})
-.then((middleware) => {
-  app.use(middleware);
-});
-
 
 app.listen(3000, () => {
   console.log('http://localhost:3000/')
@@ -176,16 +125,15 @@ app.listen(3000, () => {
 
 ```
 
+
 <br />
 
 ## src/index.js
-
 ```js
 let wrapper = document.querySelector('#wrapper')
 
 let element = document.createElement('div')
-
-// 调用koa2传过来的数据
+// G_USER 是express传递过来的参数
 element.innerHTML = G_USER
 element.classList.add('hello')
 
@@ -196,17 +144,18 @@ wrapper.appendChild(element)
 <br />
 
 ## src/basics.css
-
 ```css
 body {
   background: beige;
 }
 
 ```
+
 <br />
 
 ## src/style.css
-```
+
+```css
 @import "basics.css";
 
 .hello {
@@ -217,14 +166,17 @@ body {
 }
 
 ```
+
 <br />
-## views/index.pug
+
+## src/views/index.pug
 ```pug
 html
   head
     title pug模板
   body
-    div#wrapper koa2
+    h1 express webpack-dev-middleware
+    div#wrapper
     h1 #{title}
     h1= title
   block js
@@ -233,8 +185,5 @@ html
     script(src="/static/index.js")
 
 ```
-<br />
-
-运行 `npm run dev`启动
 
 

@@ -1,10 +1,9 @@
-
 let wrapper = document.querySelector('#wrapper')
 
 let element = document.createElement('div')
-
-// 调用koa2传过来的数据
+// G_USER 是express传递过来的参数
 element.innerHTML = G_USER
 element.classList.add('hello')
 
 wrapper.appendChild(element)
+

@@ -14,25 +14,32 @@ module.exports = {
     publicPath: '/'
   },
   devtool: 'inline-source-map',
+  module: {
+    rules: [
+      {
+        test: /\.js$/,
+        include: [path.resolve(__dirname, 'src' )],
+        exclude: [path.resolve(__dirname, 'src/libs' )],
+        use: [
+          {
+            loader: 'eslint-loader',
+            options: {
+              formatter: require('eslint-friendly-formatter')
+            }
+          }
+        ]
+      }
+    ]
+  },
   devServer: {
     // 配置服务目录地址，
     contentBase: './',
     // 热更新
     hot: true,
-    port: 8000,
-    proxy: {
-      '/revision': {
-        target: 'https://www.ximalaya.com', // 代理地址
-        changeOrigin: true,
-        logLevel: 'debug'   // 控制台显示代理信息
-      }
-    }
+    overlay: true // 有错误，在浏览器上覆盖显示
   },
   plugins: [
     // 使用热更新插件
-    new webpack.HotModuleReplacementPlugin(),
-    new webpack.ProvidePlugin({
-      $: 'jquery'
-    })
+    new webpack.HotModuleReplacementPlugin()
   ]
 };

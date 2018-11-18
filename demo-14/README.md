@@ -1,72 +1,96 @@
-eslint 检查代码规范，本文使用了**[standard](https://standardjs.com/rules-zhcn.html)** 规范，其他功能可以查看**[官方文档](https://standardjs.com/readme-zhcn.html)**
-首先安装一大堆包，具体包请看下面的 package.json
+koa2+pug+webpack
+通过koa2服务，pug模板，结合webpack,具体配置请看下面的示例
 
-定义全局变量，关闭某些规则验证请`.eslintrc.js`文件
-
+`devMiddleware.js` 和 `hotMiddleware.js`写一个koa2中间件,
 <!-- more -->
-
-## 首页介绍一下屏蔽规则的方式
-**对某一行禁用所有规则**
-```
-file = 'I know what I am doing' // eslint-disable-line
-```
-
-**对多行禁用**
-
-```
-/* eslint-disable */
-console.log('offending code goes here...')
-console.log('offending code goes here...')
-console.log('offending code goes here...')
-/* eslint-enable */
-```
-
-一些三方库（比如 mocha）会向全局暴露变量（describe、it）。这些变量或方法即没有定义，也没有被 require 进来，所以 standard 会报出变量未定义的警告（这种警告通常情况下是很有用的）。这种情况下我们想对这些全局变量禁用检查。
-为了让 standard 检测通过（同时也使代码更加易懂），在文件顶部添加如下配置：
-/* global myVar1, myVar2 */
 
 **下面是示例代码：**
 
 ## 文件结构
-
 ```
-├── index.html
+├── middleware
+│   ├── devMiddleware.js
+│   └── hotMiddleware.js
 ├── package.json
-├── .eslintrc.js
+├── server.js
 ├── src
+│   ├── basics.css
 │   ├── index.js
-│   └── libs
-│       └── lib.js
+│   ├── style.css
+│   └── views
+│       └── index.pug
 └── webpack.config.js
-```
 
+```
 ## package.json
-
 ```
-"scripts": {
-    "build": "webpack --config webpack.config.js",
-    "dev": "webpack-dev-server --open"
+  "scripts": {
+    "dev": "node server.js"
   },
   "dependencies": {
-    "jquery": "^3.3.1",
-    "webpack": "^4.23.1",
-    "webpack-cli": "^3.1.2",
-    "webpack-dev-server": "^3.1.10"
+    "koa": "^2.0.0-alpha.8",
+    "koa-pug": "^3.0.0-2",
+    "koa-router": "^7.4.0",
+    "koa-static": "^5.0.0",
+    "koa-views": "^6.1.4"
   },
   "devDependencies": {
-    "eslint": "^5.8.0",
-    "eslint-config-standard": "^12.0.0",
-    "eslint-friendly-formatter": "^4.0.1",
-    "eslint-loader": "^2.1.1",
-    "eslint-plugin-import": "^2.14.0",
-    "eslint-plugin-node": "^8.0.0",
-    "eslint-plugin-promise": "^4.0.1",
-    "eslint-plugin-standard": "^4.0.0",
-    "standard": "^12.0.1"
+    "koa-webpack": "^5.1.0",
+    "webpack": "^4.21.0",
+    "webpack-cli": "^3.1.2",
+    "webpack-dev-middleware": "^3.4.0",
+    "webpack-hot-middleware": "^2.24.3"
   },
+```
+
+<br />
+## middleware/devMiddleware.js
+```js
+const webpackDev  = require('webpack-dev-middleware')
+
+const devMiddleware = (compiler, opts) => {
+  const middleware = webpackDev(compiler, opts)
+  return async (ctx, next) => {
+    await middleware(ctx.req, {
+      end: (content) => {
+        ctx.body = content
+      },
+      setHeader: (name, value) => {
+        ctx.set(name, value)
+      }
+    }, next)
+  }
+}
+
+module.exports=devMiddleware;
+
 ```
 <br />
 
+## middleware/hotMiddleware.js
+```js
+const webpackHot = require('webpack-hot-middleware')
+const PassThrough = require('stream').PassThrough;
+
+const hotMiddleware = (compiler, opts) => {
+  const middleware = webpackHot(compiler, opts);
+  return async (ctx, next) => {
+    let stream = new PassThrough()
+    ctx.body = stream
+    await middleware(ctx.req, {
+      write: stream.write.bind(stream),
+      writeHead: (status, headers) => {
+        ctx.status = status
+        ctx.set(headers)
+      }
+    }, next)
+  }
+  
+}
+
+
+module.exports = hotMiddleware;
+```
 ## webpack.config.js
 
 ```js
@@ -89,125 +113,128 @@ module.exports = {
   module: {
     rules: [
       {
-        test: /\.js$/,
-        include: [path.resolve(__dirname, 'src' )],
-        exclude: [path.resolve(__dirname, 'src/libs' )],
-        use: [
+        rules: [
           {
-            loader: 'eslint-loader',
-            options: {
-              formatter: require('eslint-friendly-formatter')
-            }
+            test: /\.css$/,
+            use: ['style-loader', 'css-loader']
           }
         ]
       }
     ]
-  },
-  devServer: {
-    // 配置服务目录地址，
-    contentBase: './',
-    // 热更新
-    hot: true,
-    overlay: true // 有错误，在浏览器上覆盖显示
-  },
-  plugins: [
-    // 使用热更新插件
-    new webpack.HotModuleReplacementPlugin(),
-    new webpack.ProvidePlugin({
-      $: 'jquery'
-    })
-  ]
+  }
 };
 
 ```
 <br />
 
-## .eslintrc.js
+## server.js
 
 ```js
-module.exports = {
-  root: true, // 表明文件是在根目录
-  extends: 'standard', // 使用standard标准
-  plugins: [],
-  env: {  // 定义环境
-    browser: true  // 浏览器环境
-    // node: true, // node环境
-  },
-  rules: {  // 规则
-    // 设置缩进为4个空格
-    'indent': ['error', 4],
-    // 关闭代码最后空格检查
-    'no-multiple-empty-lines': 0
-  },
-  globals: {
-    // 定义$为全局变量
-    $: true
-  }
+const Koa = require('koa')
+const router = require('koa-router')()
+const static = require('koa-static')
+const views = require('koa-views')
+const path = require('path')
+
+const webpack = require('webpack')
+const koaWebpack = require('koa-webpack')
+const config = require('./webpack.config.js')
+const compiler = webpack(config)
+
+
+
+const app = new Koa()
+// 加载模板引擎
+app.use(views(path.join(__dirname, './src/views'), {
+  extension: 'pug'
+}))
+
+const devMiddleware = {
+  noInfo: true, // 控制台显示任何信息
+  // 设置静态文件的路径，在pug模板引入js路径就是 /static/index.js
+  publicPath: '/static/'
 }
+
+router.get('/', async (ctx) => {
+  // ctx.body = "用户管理"
+  await ctx.render('index', {title: 'koa2传递参数 pug模板使用', user: 'js 调用 koa2传递的变量' } )
+})
+
+/* 启动路由 */
+app.use(router.routes())
+app.use(router.allowedMethods())
+
+koaWebpack({ compiler,  devMiddleware})
+.then((middleware) => {
+  app.use(middleware);
+});
+
+
+app.listen(3000, () => {
+  console.log('http://localhost:3000/')
+})
 
 ```
 
 <br />
-
 
 ## src/index.js
+
 ```js
+let wrapper = document.querySelector('#wrapper')
 
-let add = (a, b) => {
-    return a + b
-}
+let element = document.createElement('div')
 
-add(10, 10)
+// 调用koa2传过来的数据
+element.innerHTML = G_USER
+element.classList.add('hello')
 
-$('#app').html('<p>Eslint</p>')
-log()
-sex()
-
-// 屏蔽一样
-let test=()=>{console.log('正确的代码格式')} // eslint-disable-line
-
-/* eslint-disable */
-
-let test2=()=>{
-  console.log('区块屏蔽')
-}
-
-/* eslint-enable */
-
-```
-<br />
-
-## src/libs/lib.js
-```js
-exports.log = () => {
-  console.log('测试')
-}
-
-exports.sex = () => {
-  console.log('sex')
-}
+wrapper.appendChild(element)
 
 ```
 
 <br />
 
-## index.html
-```html
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <title>配置eslinit</title>
-</head>
-<body>
+## src/basics.css
 
-<a href="https://standardjs.com/rules-zhcn.html">standardjs规程官网</a>
-<div id="app"></div>
-
-<script src="./index.js"></script>
-</body>
-</html>
+```css
+body {
+  background: beige;
+}
 
 ```
+<br />
+
+## src/style.css
+```
+@import "basics.css";
+
+.hello {
+  color: red;
+  width: 400px;
+  height: 100px;
+  border: 1px solid red;
+}
+
+```
+<br />
+## views/index.pug
+```pug
+html
+  head
+    title pug模板
+  body
+    div#wrapper koa2
+    h1 #{title}
+    h1= title
+  block js
+    script.
+      var G_USER = !{JSON.stringify(user)};
+    script(src="/static/index.js")
+
+```
+<br />
+
+运行 `npm run dev`启动
 
 

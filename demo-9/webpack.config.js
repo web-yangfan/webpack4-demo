@@ -1,26 +1,64 @@
+const path = require("path")
+const MiniCssExtractPlugin = require("mini-css-extract-plugin")
+const HTMLWebpackPlugin = require('html-webpack-plugin')
 const CleanWebpackPlugin = require('clean-webpack-plugin')
-const ManifestPlugin = require('webpack-manifest-plugin')
-const webpack = require('webpack');
-const path = require('path');
+const PurifyCSS = require("purifycss-webpack");
+const glob = require("glob-all");
+
 
 module.exports = {
-  // development production
   mode: 'development',
   entry: {
-    pageA: './src/a.js',
-    pageB: './src/b.js'
+    pageA: "./src/pageA.js",
   },
   output: {
-    filename: '[name].js',
-    path: path.resolve(__dirname, 'dist'),
-    publicPath: '/'
+    path: path.resolve(__dirname, "dist"),
+    filename: "[name].js",
+    publicPath: "./"
   },
-  // 开发模式
-  // 编译后的代码映射回原始源代码
-  devtool: 'inline-source-map',
+  module: {
+    rules: [
+      {
+        test: /\.scss$/,
+        use: [
+          MiniCssExtractPlugin.loader,
+          'css-loader',
+          {
+            loader: 'postcss-loader',
+            options: {
+              ident: 'postcss',
+              plugins:() => [
+                require('autoprefixer')( {"browsers": ["> 1%", "last 2 versions", "not ie <= 8"]} )
+              ]
+            }
+          },
+          'sass-loader'
+        ]
+      }
+    ]
+  },
   plugins: [
-    // 每次编译前清空删除dist目录
+    // 编译前清空dist目录
     new CleanWebpackPlugin(['dist']),
-    new ManifestPlugin()
+    // 生成html
+    new HTMLWebpackPlugin({
+      filename: 'pageA.html',
+      title: 'css Tree Shaking',
+      inject: true
+    }),
+    
+    // 单独打包css
+    new MiniCssExtractPlugin({
+      filename: "css/[name].css",
+      chunkFilename: "css/[id].css"
+    }),
+    // 去掉没有使用的css
+    new PurifyCSS({
+      paths: glob.sync([
+        // CSS Tree Shaking的路径文件
+        // path.resolve(__dirname, "./*.html"), // 对 html 文件进行 tree shaking
+        path.resolve(__dirname, "./src/*.js")
+      ])
+    })
   ]
-}
+};

@@ -1,28 +1,10 @@
-import { log, sex } from './libs/lib.js'
 
-let add = (a, b) => {
-    return a + b
-}
+let wrapper = document.querySelector('#wrapper')
 
-add(10, 10)
+let element = document.createElement('div')
 
-$('#app').html('<p>Eslint</p>')
-log()
-sex()
+// 调用koa2传过来的数据
+element.innerHTML = G_USER
+element.classList.add('hello')
 
-// 屏蔽一样
-let test=()=>{console.log('正确的代码格式')} // eslint-disable-line
-
-/* eslint-disable */
-
-let test2=()=>{
-  console.log('区块屏蔽')
-}
-
-/* eslint-enable */
-
-
-
-
-
-
+wrapper.appendChild(element)

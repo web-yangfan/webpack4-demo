@@ -1,9 +1,21 @@
-let wrapper = document.querySelector('#wrapper')
+import axios from 'axios'
 
-let element = document.createElement('div')
-// G_USER 是express传递过来的参数
-element.innerHTML = G_USER
-element.classList.add('hello')
 
-wrapper.appendChild(element)
+var btn = document.createElement('button');
+btn.innerHTML = '跨域请求'
+btn.onclick = function() {
+  axios.get('/revision/album/getTracksList', {
+    params: {
+      albumId: 3268363,
+      pageNum: 1
+    }
+  }).then( (res) => {
+    alert(res.data.msg)
+  }).catch((error) => {
+    alert('失败')
+  })
+}
+
+document.body.appendChild(btn)
+
 

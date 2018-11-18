@@ -1,42 +1,31 @@
-const Koa = require('koa')
-const router = require('koa-router')()
-const static = require('koa-static')
-const views = require('koa-views')
-const path = require('path')
-
+const express = require('express')
 const webpack = require('webpack')
-const koaWebpack = require('koa-webpack')
+const webpackDevMiddleware = require('webpack-dev-middleware')
 const config = require('./webpack.config.js')
+
+const app = express()
+
+// 获取webapck配置对象
 const compiler = webpack(config)
 
 
+app.set('view engine', 'pug') // 设置模板
+app.set('views', './src/views') // 设置模板位置
 
-const app = new Koa()
-// 加载模板引擎
-app.use(views(path.join(__dirname, './src/views'), {
-  extension: 'pug'
+app.use(webpackDevMiddleware(compiler, {
+  noInfo: true, // 向控制台显示任何内容
+  // 设置静态文件的路径，在pug模板引入js路径就是 /static/index.js
+  publicPath: '/static/',
+  stats: 'errors-only'
 }))
 
-const devMiddleware = {
-  noInfo: true, // 控制台显示任何信息
-  // 设置静态文件的路径，在pug模板引入js路径就是 /static/index.js
-  publicPath: '/static/'
-}
+app.use(require("webpack-hot-middleware")(compiler))
 
-router.get('/', async (ctx) => {
-  // ctx.body = "用户管理"
-  await ctx.render('index', {title: 'koa2传递参数 pug模板使用', user: 'js 调用 koa2传递的变量' } )
+// 设置路由
+app.get('/', (req, res) => {
+  // 加载模板,并且往模板里传递参数 'user'、'message
+  res.render('index', { title: 'express传递参数 pug模板使用', user: 'js 调用 express传递的变量' } )
 })
-
-/* 启动路由 */
-app.use(router.routes())
-app.use(router.allowedMethods())
-
-koaWebpack({ compiler,  devMiddleware})
-.then((middleware) => {
-  app.use(middleware);
-});
-
 
 app.listen(3000, () => {
   console.log('http://localhost:3000/')
